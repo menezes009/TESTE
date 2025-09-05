@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diagnóstico</title>
+  <style>
+    body { font-family:-apple-system, system-ui, Segoe UI, Roboto, Ubuntu; background:#0b0f14; color:#e5e7eb; margin:0; padding:16px; }
+    pre { background:#111827; padding:8px; border-radius:8px; overflow:auto; }
+    .ok { color:#16a34a; } .warn{ color:#f59e0b; } .err{ color:#ef4444; }
+    button { padding: 8px 12px; border:1px solid #374151; background:#1f2937; color:#e5e7eb; border-radius:10px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h1>Diagnóstico de Câmera & Permissões</h1>
+  <button id="btnRun">Executar diagnóstico</button>
+  <div id="out"></div>
+  <script type="module">
+    const out = document.getElementById('out');
+    function line(t, cls){ const d=document.createElement('div'); d.textContent=t; if(cls) d.className=cls; out.appendChild(d); }
+    function obj(label, o){ const pre=document.createElement('pre'); pre.textContent = label + '\n' + JSON.stringify(o,null,2); out.appendChild(pre); }
+    async function run(){
+      out.innerHTML='';
+      line('URL: ' + location.href);
+      line('HTTPS: ' + (location.protocol==='https:'?'SIM':'NÃO'), location.protocol==='https:'?'ok':'err');
+      try{
+        const perm = await navigator.permissions.query({name:'camera'});
+        line('Permissão de câmera: ' + perm.state, perm.state==='granted'?'ok':(perm.state==='prompt'?'warn':'err'));
+      }catch{ line('Permissions API indisponível','warn'); }
+      try{
+        const devs = await navigator.mediaDevices.enumerateDevices();
+        obj('Dispositivos', devs);
+        line('Câmeras: ' + devs.filter(d=>d.kind==='videoinput').length, 'ok');
+      }catch(e){ line('enumerateDevices falhou: ' + e.message, 'err'); }
+      try{
+        const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
+        line('getUserMedia OK','ok'); s.getTracks().forEach(t=>t.stop());
+      }catch(e){ line('getUserMedia falhou: ' + e.name + ' - ' + e.message, 'err'); }
+    }
+    document.getElementById('btnRun').addEventListener('click', run);
+  </script>
+</body>
+</html>
