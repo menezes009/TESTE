@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Check-in – iPhone Ready</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body { font-family:-apple-system, system-ui, Segoe UI, Roboto; background:#0b0f14; color:#e5e7eb; margin:0; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px; }
+    h1 { margin:0 0 12px; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0; }
+    #reader { width:100%; max-width:420px; background:#000; border-radius:12px; }
+    input, select, button { padding:8px 12px; border:1px solid #374151; background:#1f2937; color:#e5e7eb; border-radius:10px; }
+    .badge { display:inline-block; padding:6px 10px; border-radius:999px; background:#374151; }
+    .ok { background:#16a34a; color:#052e16; font-weight:700; }
+    .warn { background:#f59e0b; color:#3b2600; font-weight:700; }
+    .err { background:#dc2626; color:#450a0a; font-weight:700; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Check-in – iPhone Ready</h1>
+    <div class="row">
+      <button id="btnStart">Iniciar Leitura</button>
+      <button id="btnStop" disabled>Parar</button>
+      <select id="cameraSelect"></select>
+    </div>
+    <div id="reader"></div>
+    <div class="row">
+      <input type="file" id="file" accept="image/jpeg,image/png,image/jpg" capture="environment" />
+      <button id="btnScanFile">Ler imagem (iPhone)</button>
+    </div>
+    <div class="row">
+      <input id="manual" type="text" placeholder="Digite ou cole o código" />
+      <button id="btnManual">Validar</button>
+    </div>
+    <div class="row">
+      <div id="status" class="badge">Aguardando…</div>
+    </div>
+    <script src="script.ios.js"></script>
+  </main>
+</body>
+</html>
