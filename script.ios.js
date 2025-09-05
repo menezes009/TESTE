@@ -1,8 +1,9 @@
-// script.ios.js – iOS tuned (Safari). Requires data.json in same folder.
-// Supports array [{codigo,nome,presenca}] or map {CODE:{name}}.
+// script.ios.js – iOS tuned + duplicate prevention + local log
+const EVENT_NAME = 'teste01'; // use o mesmo nome do seu evento
 let html5Qrcode, currentCameraId = null, last = '', lastTime=0;
 const DEBOUNCE=1500;
 let codesMap = {};
+let usedLocal = new Set(JSON.parse(localStorage.getItem(`used_${EVENT_NAME}`) || '[]'));
 
 const elStart = document.getElementById('btnStart');
 const elStop = document.getElementById('btnStop');
@@ -10,6 +11,13 @@ const elSel = document.getElementById('cameraSelect');
 const elStatus = document.getElementById('status');
 
 function setStatus(t, cls=''){ elStatus.textContent=t; elStatus.className='badge '+cls; }
+function persistUsed(){ localStorage.setItem(`used_${EVENT_NAME}`, JSON.stringify(Array.from(usedLocal))); }
+function addCheckinLog(entry){
+  const key = `checkins_${EVENT_NAME}`;
+  const arr = JSON.parse(localStorage.getItem(key) || '[]');
+  arr.push(entry);
+  localStorage.setItem(key, JSON.stringify(arr));
+}
 
 function extractCodigo(text){
   try{ const u=new URL(text); const p=new URLSearchParams(u.search||''); const c=p.get('codigo')||p.get('code')||p.get('c'); if(c) return c.trim(); }catch{}
@@ -30,7 +38,7 @@ async function listCameras(){
   const cams = await Html5Qrcode.getCameras();
   elSel.innerHTML='';
   cams.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.label||c.id; elSel.appendChild(o); });
-  if (cams[0]) currentCameraId = cams.find(c=>/back|traseira|back|rear/i.test(c.label||''))?.id || cams[0].id;
+  if (cams[0]) currentCameraId = cams.find(c=>/back|traseira|rear/i.test(c.label||''))?.id || cams[0].id;
 }
 
 function handle(text){
@@ -39,8 +47,14 @@ function handle(text){
   const now = Date.now(); if (code===last && now-lastTime<DEBOUNCE) return; last=code; lastTime=now;
   const item = codesMap[code];
   if (!item){ setStatus('Inválido', 'err'); return; }
-  if (String(item.presenca||'').toLowerCase()==='sim'){ setStatus('❌ Já usado', 'warn'); return; }
-  setStatus('✅ Acesso: ' + (item.name || item.nome || 'Convidado'), 'ok');
+
+  if (String(item.presenca||'').toLowerCase()==='sim'){ setStatus('❌ Já usado (marca de presença)', 'warn'); return; }
+  if (usedLocal.has(code)){ setStatus('⛔ Já lido neste aparelho', 'warn'); return; }
+
+  usedLocal.add(code); persistUsed();
+  const name = item.name || item.nome || 'Convidado';
+  addCheckinLog({ code, name, at: Date.now(), deviceId: 'ios' });
+  setStatus('✅ Acesso: ' + name, 'ok');
 }
 
 async function start(){
@@ -67,7 +81,6 @@ document.getElementById('btnScanFile').addEventListener('click', async ()=>{
     if (!html5Qrcode) html5Qrcode = new Html5Qrcode('reader');
     const f = document.getElementById('file').files[0];
     if (!f){ setStatus('Selecione uma imagem JPG/PNG', 'warn'); return; }
-    // iOS tip: if HEIC, take a screenshot of the QR (gera PNG) e use aqui.
     const txt = await html5Qrcode.scanFile(f, true);
     handle(txt);
   }catch(e){
